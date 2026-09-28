@@ -10,8 +10,9 @@
         --card-bg: #ffffff;
         --text-main: #1f1f1f;
         --text-sub: #7b7b7b;
-        --accent: #4f46e5; /* 类似参考图的蓝色 */
+        --accent: #4f46e5;
         --border: #e5e5e5;
+        --danger: #ef4444;
     }
     * { box-sizing: border-box; }
     body {
@@ -22,7 +23,9 @@
         display: flex;
         height: 100vh;
         overflow: hidden;
+        position: relative;
     }
+    
     /* 侧边栏（日历） */
     .sidebar {
         width: 320px;
@@ -32,16 +35,28 @@
         display: flex;
         flex-direction: column;
         overflow-y: auto;
+        transition: transform 0.3s ease;
+        z-index: 100;
+    }
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
     }
     .sidebar h2 {
         font-size: 18px;
-        margin: 0 0 20px 0;
+        margin: 0;
         display: flex;
         align-items: center;
         gap: 8px;
     }
     .sidebar h2::before { content: "#"; color: var(--text-sub); font-size: 22px; }
-    
+    .close-sidebar {
+        display: none;
+        background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-sub);
+    }
+
     /* 日历样式 */
     .calendar-header {
         display: flex;
@@ -83,9 +98,58 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .main-header-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .menu-btn {
+        display: none;
+        background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-main);
     }
     .main-header h1 { font-size: 24px; margin: 0; display: flex; align-items: center; gap: 8px;}
     .main-header h1::before { content: "#"; color: var(--text-sub); }
+
+    /* 按钮样式 */
+    .btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 500;
+        transition: 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+    .btn-outline:hover { background: #f0f0ff; }
+    .btn-danger { background: var(--danger); }
+    .btn-danger:hover { opacity: 0.9; }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+    /* 视图切换标签 */
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 10px;
+    }
+    .tab {
+        padding: 6px 12px;
+        cursor: pointer;
+        color: var(--text-sub);
+        font-weight: 500;
+        border-radius: 6px;
+        transition: 0.2s;
+    }
+    .tab.active { background: var(--accent); color: white; }
 
     /* 输入卡片 */
     .editor-card {
@@ -112,6 +176,8 @@
         align-items: center;
         border-top: 1px solid var(--border);
         padding-top: 15px;
+        flex-wrap: wrap;
+        gap: 10px;
     }
     .file-upload {
         display: flex;
@@ -129,20 +195,6 @@
         transition: 0.2s;
     }
     .file-upload label:hover { border-color: var(--accent); color: var(--accent); }
-    
-    .btn {
-        background: var(--accent);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 15px;
-        font-weight: 500;
-        transition: 0.2s;
-    }
-    .btn:hover { opacity: 0.9; }
-    .btn:disabled { background: #ccc; cursor: not-allowed; }
 
     /* 日记展示列表 */
     .diary-list { display: flex; flex-direction: column; gap: 15px; }
@@ -151,6 +203,7 @@
         border: 1px solid var(--border);
         border-radius: 12px;
         padding: 20px;
+        position: relative;
     }
     .diary-item .date {
         font-size: 12px;
@@ -169,14 +222,45 @@
         margin-top: 10px;
         border: 1px solid var(--border);
     }
+    .diary-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+    }
     .empty-tip { text-align: center; color: var(--text-sub); padding: 40px; }
+
+    /* 手机端适配 */
+    @media (max-width: 768px) {
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100%;
+            transform: translateX(-100%);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar.open { transform: translateX(0); }
+        .close-sidebar { display: block; }
+        .menu-btn { display: block; }
+        .main { padding: 15px; }
+        .main-header h1 { font-size: 18px; }
+        .editor-actions { flex-direction: column; align-items: stretch; }
+        .editor-actions .btn { width: 100%; }
+        .file-upload { justify-content: center; }
+    }
 </style>
 </head>
 <body>
 
-<!-- 侧边栏：日历 -->
-<div class="sidebar">
-    <h2>日记索引</h2>
+<!-- 侧边栏（日历） -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>日记索引</h2>
+        <button class="close-sidebar" id="close-sidebar">×</button>
+    </div>
     <div class="calendar-header">
         <button id="prev-month">&lt;</button>
         <span id="month-label"></span>
@@ -188,11 +272,20 @@
 <!-- 主内容 -->
 <div class="main">
     <div class="main-header">
-        <h1 id="page-title">全部日记</h1>
+        <div class="main-header-left">
+            <button class="menu-btn" id="menu-btn">☰</button>
+            <h1 id="page-title">全部日记</h1>
+        </div>
     </div>
 
-    <!-- 写日记 -->
-    <div class="editor-card">
+    <!-- 视图切换 -->
+    <div class="tabs">
+        <div class="tab active" id="tab-diary">📔 日记本</div>
+        <div class="tab" id="tab-trash">🗑️ 垃圾桶</div>
+    </div>
+
+    <!-- 写日记（仅日记本视图显示） -->
+    <div class="editor-card" id="editor-card">
         <textarea id="diary-content" placeholder="写下今天的故事..."></textarea>
         <div class="editor-actions">
             <div class="file-upload">
@@ -215,12 +308,18 @@ const SUPABASE_URL = "https://zpsbdymlofvzyskymagh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_6jazDy0kesZQBPSBaY77Rg_qMTM6Hze";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* ========== 2. 全局状态与日历 ========== */
+/* ========== 2. 全局状态 ========== */
 let currentDate = new Date();
 let selectedDate = new Date().toISOString().split('T')[0]; // 默认选中今天
 let allDiaries = [];
+let currentView = 'diary'; // 'diary' 或 'trash'
 
-// 生成日历
+/* ========== 3. 手机端侧边栏切换 ========== */
+const sidebar = document.getElementById("sidebar");
+document.getElementById("menu-btn").onclick = () => sidebar.classList.add("open");
+document.getElementById("close-sidebar").onclick = () => sidebar.classList.remove("open");
+
+/* ========== 4. 日历渲染 ========== */
 function renderCalendar() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -248,14 +347,43 @@ function renderCalendar() {
         div.textContent = d;
         const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
         if (dateStr === selectedDate) div.classList.add("active");
-        div.onclick = () => { selectedDate = dateStr; document.getElementById("page-title").textContent = `${dateStr} 的日记`; renderCalendar(); renderDiaries(); };
+        div.onclick = () => { 
+            selectedDate = dateStr; 
+            document.getElementById("page-title").textContent = `${dateStr} 的日记`; 
+            renderCalendar(); 
+            renderDiaries(); 
+            sidebar.classList.remove("open"); // 选完日期自动收起侧边栏
+        };
         grid.appendChild(div);
     }
 }
 
-/* ========== 3. 获取并渲染日记 ========== */
+/* ========== 5. 视图切换 ========== */
+document.getElementById("tab-diary").onclick = () => {
+    currentView = 'diary';
+    document.getElementById("tab-diary").classList.add("active");
+    document.getElementById("tab-trash").classList.remove("active");
+    document.getElementById("editor-card").style.display = "block";
+    document.getElementById("page-title").textContent = `${selectedDate} 的日记`;
+    renderDiaries();
+};
+
+document.getElementById("tab-trash").onclick = () => {
+    currentView = 'trash';
+    document.getElementById("tab-trash").classList.add("active");
+    document.getElementById("tab-diary").classList.remove("active");
+    document.getElementById("editor-card").style.display = "none";
+    document.getElementById("page-title").textContent = "垃圾桶";
+    renderDiaries();
+};
+
+/* ========== 6. 获取并渲染日记 ========== */
 async function loadDiaries() {
-    const { data, error } = await supabaseClient.from("diaries").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabaseClient
+        .from("diaries")
+        .select("*")
+        .order("created_at", { ascending: false });
+    
     if (error) { console.error(error); return; }
     allDiaries = data || [];
     renderDiaries();
@@ -263,16 +391,32 @@ async function loadDiaries() {
 
 function renderDiaries() {
     const list = document.getElementById("diary-list");
-    const filtered = allDiaries.filter(d => d.date === selectedDate);
+    
+    // 根据视图过滤
+    let filtered = [];
+    if (currentView === 'diary') {
+        filtered = allDiaries.filter(d => d.date === selectedDate && !d.deleted);
+    } else {
+        filtered = allDiaries.filter(d => d.deleted);
+    }
+
     if (filtered.length === 0) {
-        list.innerHTML = `<div class="empty-tip">这一天还没有日记哦，快去写一篇吧 ♡</div>`;
+        list.innerHTML = `<div class="empty-tip">${currentView === 'diary' ? '这一天还没有日记哦，快去写一篇吧 ♡' : '垃圾桶是空的 🗑️'}</div>`;
         return;
     }
+
     list.innerHTML = filtered.map(d => `
         <div class="diary-item">
             <div class="date">📅 ${d.date}</div>
             <div class="content">${escapeHTML(d.content)}</div>
             ${d.image_url ? `<img src="${d.image_url}" class="image" />` : ""}
+            <div class="diary-actions">
+                ${currentView === 'diary' 
+                    ? `<button class="btn btn-danger btn-sm" onclick="moveToTrash('${d.id}')">移入垃圾桶</button>`
+                    : `<button class="btn btn-outline btn-sm" onclick="restoreFromTrash('${d.id}')">恢复</button>
+                       <button class="btn btn-danger btn-sm" onclick="deletePermanently('${d.id}')">彻底删除</button>`
+                }
+            </div>
         </div>
     `).join("");
 }
@@ -281,7 +425,31 @@ function escapeHTML(text) {
     return String(text || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-/* ========== 4. 上传图片并保存日记 ========== */
+/* ========== 7. 删除与恢复功能 ========== */
+// 移入垃圾桶（软删除）
+async function moveToTrash(id) {
+    if (!confirm("确定要移入垃圾桶吗？")) return;
+    const { error } = await supabaseClient.from("diaries").update({ deleted: true }).eq("id", id);
+    if (error) { alert("操作失败：" + error.message); return; }
+    await loadDiaries();
+}
+
+// 从垃圾桶恢复
+async function restoreFromTrash(id) {
+    const { error } = await supabaseClient.from("diaries").update({ deleted: false }).eq("id", id);
+    if (error) { alert("操作失败：" + error.message); return; }
+    await loadDiaries();
+}
+
+// 彻底删除（从数据库抹除）
+async function deletePermanently(id) {
+    if (!confirm("确定要彻底删除吗？此操作不可恢复！")) return;
+    const { error } = await supabaseClient.from("diaries").delete().eq("id", id);
+    if (error) { alert("删除失败：" + error.message); return; }
+    await loadDiaries();
+}
+
+/* ========== 8. 上传图片并保存日记 ========== */
 document.getElementById("image-input").addEventListener("change", function(e) {
     const file = e.target.files[0];
     document.getElementById("file-name").textContent = file ? file.name : "";
@@ -302,11 +470,10 @@ document.getElementById("save-btn").addEventListener("click", async function() {
 
     let imageUrl = null;
 
-    // 上传图片到 Supabase Storage
     if (file) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+        const { error: uploadError } = await supabaseClient.storage
             .from("diary-images")
             .upload(fileName, file);
 
@@ -320,12 +487,12 @@ document.getElementById("save-btn").addEventListener("click", async function() {
         imageUrl = urlData.publicUrl;
     }
 
-    // 保存数据到数据库
     const { error } = await supabaseClient.from("diaries").insert({
         id: Date.now().toString(36),
         date: selectedDate,
         content: content,
-        image_url: imageUrl
+        image_url: imageUrl,
+        deleted: false
     });
 
     if (error) {
@@ -341,7 +508,7 @@ document.getElementById("save-btn").addEventListener("click", async function() {
     this.textContent = "保存日记";
 });
 
-/* ========== 5. 日历翻页 ========== */
+/* ========== 9. 日历翻页 ========== */
 document.getElementById("prev-month").onclick = () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
     renderCalendar();
